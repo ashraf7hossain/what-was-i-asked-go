@@ -1,0 +1,37 @@
+# version: '3.8'
+
+# services:
+#   app:
+#     image: 'golang:latest'
+#     working_dir: /go/src/app
+#     ports:
+#       - "8000:8080"
+#     volumes:
+#       - .:/go/src/app 
+#     command: 
+#     container_name: go_container
+
+version: '3.8'
+
+services:
+  app:
+    build: .
+    image: 'golang:latest'
+    working_dir: /go/src/app
+    ports:
+      - "8000:8080"   
+    volumes:
+      - .:/go/src/app 
+    container_name: go_container
+    environment:
+      - GO111MODULE=on
+  
+  postgres:
+    image: 'postgres:13'
+    container_name: postgres_container
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
