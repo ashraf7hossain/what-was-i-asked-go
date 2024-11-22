@@ -8,17 +8,30 @@ import (
 )
 
 func SetupRoutes(r *gin.Engine) {
+
+	api := r.Group("/api")
+
 	userController := controllers.UserController{}
 
-	r.POST("/register", userController.RegisterUser)
-	r.POST("/login", userController.LoginUser)
+	api.POST("/register", userController.RegisterUser)
+	api.POST("/login", userController.LoginUser)
+  
+	// posts
+	api.GET("/posts", controllers.PostIndex)
+  
+	// tags 
+	api.POST("/search/tags", controllers.SearchByTag)
+  
+	// comments
+	api.GET("/posts/:id/comments", controllers.PostComments)
 
-	r.GET("/posts", controllers.PostIndex)
-
-	protected := r.Group("/")
+	protected := api.Group("/")
+	
 	protected.Use(middlewares.RequireAuth())
 	{
 		protected.GET("/profile", userController.GetProfile)
 		protected.POST("/posts", controllers.PostCreate)
+		protected.PATCH("/posts/:id", controllers.PostUpdate)
+		protected.POST("/comments", controllers.PostComment)
 	}
 }
