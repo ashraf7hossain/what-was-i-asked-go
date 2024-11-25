@@ -1,11 +1,12 @@
 package routes
 
 import (
-	  // "go/doc/comment"
+	// "go/doc/comment"
 	"rest-in-go/controllers"
-	"rest-in-go/controllers/user"
-	"rest-in-go/controllers/post"
 	"rest-in-go/controllers/comment"
+	"rest-in-go/controllers/post"
+	"rest-in-go/controllers/user"
+	"rest-in-go/controllers/vote"
 	"rest-in-go/middlewares"
 
 	"github.com/gin-gonic/gin"
@@ -18,35 +19,40 @@ func SetupRoutes(r *gin.Engine) {
 	api := r.Group("/api")
 
 	userRepository := user.NewUserRepository()
-	userService    := user.NewUserService(userRepository)
+	userService := user.NewUserService(userRepository)
 	UserHandler := user.NewUserHandler(userService)
 
 	postRepository := post.NewPostRepository()
-	posetService   := post.NewPostService(postRepository)
-	postHandler    := post.NewPostHandler(posetService)
+	posetService := post.NewPostService(postRepository)
+	postHandler := post.NewPostHandler(posetService)
 
 	commentRepository := comment.NewCommentRepository()
-	commentService    := comment.NewCommentService(commentRepository)
-	commentHandler    := comment.NewCommentHandler(commentService)
-  
-	
+	commentService := comment.NewCommentService(commentRepository)
+	commentHandler := comment.NewCommentHandler(commentService)
 
-	// userController    := controllers.UserController{} 
-	searchController  := controllers.SearchController{}
+	voteRepository := vote.NewVoteRepository()
+	voteService := vote.NewVoteService(voteRepository)
+	voteHandler := vote.NewVoteHandler(voteService)
+
+	// userController    := controllers.UserController{}
+	searchController := controllers.SearchController{}
 	// commentController := controllers.Comment{}
 
-	  // auth
+	// auth
 	api.POST("/register", UserHandler.CreateUser)
 	api.POST("/login", UserHandler.LoginUser)
 
-	  // posts
+	// posts
 	api.GET("/posts", postHandler.GetPosts)
 
-	  // tags
+	// tags
 	api.POST("/search/tags", searchController.SearchByTag)
 
-	  // comments
+	// comments
 	api.GET("/posts/:id/comments", commentHandler.GetAllCommentsByPost)
+  
+	// votes 
+  api.GET("/posts/:id/votes", voteHandler.GetVotesByPostID)
 
 	protected := api.Group("/")
 
@@ -56,5 +62,6 @@ func SetupRoutes(r *gin.Engine) {
 		protected.POST("/posts", postHandler.CreatePost)
 		protected.PATCH("/posts/:id", postHandler.UpdatePost)
 		protected.POST("/comments", commentHandler.PostComment)
+		protected.POST("/votes", voteHandler.CreateVote)
 	}
 }
