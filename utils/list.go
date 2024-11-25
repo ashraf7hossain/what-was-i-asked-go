@@ -8,9 +8,6 @@ func Map[T any, U any](list []T, f func(T) U) []U {
     result := make([]U, len(list))
     for i, v := range list {
         result[i] = f(v)
-				fmt.Println("modified v =", f(v))
-				fmt.Println()
-
     }
     return result
 }

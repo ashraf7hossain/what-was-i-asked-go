@@ -11,21 +11,13 @@ import (
 	"gorm.io/gorm"
 )
 
-// Handle errors centrally and return a consistent response
-func handleError(c *gin.Context, statusCode int, message string, details error) {
-	c.JSON(statusCode, gin.H{
-		"error":   message,
-		"details": details.Error(),
-	})
-}
-
 // Get all posts
 func PostIndex(c *gin.Context) {
 	var posts []models.Post
 
 	// Fetch posts from the database
 	if err := initializers.DB.Preload("Tags").Find(&posts).Error; err != nil {
-		handleError(c, http.StatusInternalServerError, "Failed to fetch posts", err)
+		c.Error(err).SetMeta(http.StatusInternalServerError) // Pass error to middleware
 		return
 	}
 
@@ -35,7 +27,7 @@ func PostIndex(c *gin.Context) {
 }
 
 // Create a new post
-func PostCreate(c *gin.Context) {
+func CreatePost(c *gin.Context) {
 	var body struct {
 		Title string   `json:"title" binding:"required"`
 		Body  string   `json:"body" binding:"required"`
@@ -44,30 +36,21 @@ func PostCreate(c *gin.Context) {
 
 	// Parse and validate the request body
 	if err := c.ShouldBindJSON(&body); err != nil {
-		handleError(c, http.StatusBadRequest, "Invalid request data", err)
+		c.Error(err).SetMeta(http.StatusBadRequest)
 		return
 	}
 
-	// Extract user ID from JWT token
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	userID, err := utils.GetUserID(c)
+	if err != nil {
+		c.Error(utils.NewError("Unauthorized")).SetMeta(http.StatusUnauthorized)
 		return
 	}
-
-	// Validate userID format
-	userIDUint, ok := userID.(uint)
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
-		return
-	}
-
 	// Find or create tags
 	var tags []models.Tag
 	for _, tagName := range body.Tags {
 		var tag models.Tag
 		if err := initializers.DB.FirstOrCreate(&tag, models.Tag{Name: tagName}).Error; err != nil {
-			handleError(c, http.StatusInternalServerError, "Failed to process tags", err)
+			c.Error(err).SetMeta(http.StatusInternalServerError)
 			return
 		}
 		tags = append(tags, tag)
@@ -77,11 +60,11 @@ func PostCreate(c *gin.Context) {
 	post := models.Post{
 		Title:  body.Title,
 		Body:   body.Body,
-		UserID: userIDUint,
+		UserID: userID,
 		Tags:   tags,
 	}
 	if err := initializers.DB.Create(&post).Error; err != nil {
-		handleError(c, http.StatusInternalServerError, "Failed to create post", err)
+		c.Error(err).SetMeta(http.StatusInternalServerError)
 		return
 	}
 
@@ -92,7 +75,7 @@ func PostCreate(c *gin.Context) {
 }
 
 // Update an existing post
-func PostUpdate(c *gin.Context) {
+func UpdatePost(c *gin.Context) {
 	id := c.Param("id")
 
 	var body struct {
@@ -103,40 +86,29 @@ func PostUpdate(c *gin.Context) {
 
 	// Parse the request body
 	if err := c.ShouldBindJSON(&body); err != nil {
-		handleError(c, http.StatusBadRequest, "Invalid request data", err)
+		c.Error(err).SetMeta(http.StatusBadRequest)
 		return
 	}
 
-	// Extract user ID from JWT token
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	userID, err := utils.GetUserID(c)
+	if err != nil {
+		c.Error(utils.NewError("Unauthorized")).SetMeta(http.StatusUnauthorized)
 		return
 	}
-
-	// Validate userID format
-	userIDUint, ok := userID.(uint)
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
-		return
-	}
-
 	// Find the post
 	var post models.Post
 	if err := initializers.DB.Preload("Tags").First(&post, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+			c.Error(err).SetMeta(http.StatusNotFound)
 		} else {
-			handleError(c, http.StatusInternalServerError, "Failed to fetch post", err)
+			c.Error(err).SetMeta(http.StatusInternalServerError)
 		}
 		return
 	}
 
 	// Check if the user owns the post
-	if post.UserID != userIDUint {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error": "You are not authorized to update this post",
-		})
+	if post.UserID != userID {
+		c.Error(utils.NewError("Unauthorized")).SetMeta(http.StatusForbidden)
 		return
 	}
 
@@ -149,20 +121,20 @@ func PostUpdate(c *gin.Context) {
 	for _, tagName := range body.Tags {
 		var tag models.Tag
 		if err := initializers.DB.FirstOrCreate(&tag, models.Tag{Name: tagName}).Error; err != nil {
-			handleError(c, http.StatusInternalServerError, "Failed to process tags", err)
+			c.Error(err).SetMeta(http.StatusInternalServerError)
 			return
 		}
 		newTags = append(newTags, tag)
 	}
 
 	if err := initializers.DB.Model(&post).Association("Tags").Replace(newTags); err != nil {
-		handleError(c, http.StatusInternalServerError, "Failed to update post tags", err)
+		c.Error(err).SetMeta(http.StatusInternalServerError)
 		return
 	}
 
 	// Save the updated post
 	if err := initializers.DB.Save(&post).Error; err != nil {
-		handleError(c, http.StatusInternalServerError, "Failed to save updated post", err)
+		c.Error(err).SetMeta(http.StatusInternalServerError)
 		return
 	}
 
@@ -172,7 +144,8 @@ func PostUpdate(c *gin.Context) {
 	})
 }
 
-func PostComments(c *gin.Context) {
+// Get all comments of a post
+func GetComments(c *gin.Context) {
 	postID := c.Param("id")
 
 	var comments []models.Comment
@@ -182,7 +155,7 @@ func PostComments(c *gin.Context) {
 		Find(&comments).Error
 
 	if err != nil {
-		handleError(c, http.StatusInternalServerError, "Failed to fetch comments", err)
+		c.Error(err).SetMeta(http.StatusInternalServerError)
 		return
 	}
 

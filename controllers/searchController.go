@@ -11,13 +11,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SearchByTag(c *gin.Context) {
+type SearchController struct {}
+
+func (s *SearchController) SearchByTag(c *gin.Context) {
 	var body struct {
 		Tags []string `json:"tags"`
 	}
 
 	if err := c.BindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.Error(err).SetMeta(http.StatusBadRequest)
 		return
 	}
 
@@ -33,7 +35,7 @@ func SearchByTag(c *gin.Context) {
 		Find(&posts)
 
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch posts"})
+		c.Error(result.Error).SetMeta(http.StatusInternalServerError)
 		return
 	}
 

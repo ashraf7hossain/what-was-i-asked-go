@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"rest-in-go/initializers"
 	"rest-in-go/models"
@@ -34,7 +35,8 @@ func (uc *UserController) RegisterUser(c *gin.Context) {
 	user := models.User{Name: body.Name, Email: body.Email, Password: string(hash)}
 	result := initializers.DB.Create(&user)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		fmt.Println(result.Error)
+		c.JSON(http.StatusInternalServerError, result.Error)
 		return
 	}
 

@@ -5,38 +5,33 @@ import (
 	"net/http"
 	"rest-in-go/initializers"
 	"rest-in-go/models"
+	"rest-in-go/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
-func PostComment(c *gin.Context) {
+type Comment struct {}
+
+func (cmt *Comment)PostComment(c *gin.Context) {
 
 	var body struct {
 		PostID uint   `json:"post_id"`
 		Body   string `json:"body"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
 		return
 	}
 
-	userID, exists := c.Get("userID")
-	
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	userIDUint, ok := userID.(uint)
-	
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+	userID, err := utils.GetUserID(c)
+	if err != nil {
+		c.Error(utils.NewError("Unauthorized")).SetMeta(http.StatusUnauthorized)
 		return
 	}
 
 	comment := models.Comment{
-		UserID: userIDUint,
+		UserID: userID,
 		PostID: body.PostID,
 		Body:   body.Body,
 	}

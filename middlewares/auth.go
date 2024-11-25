@@ -2,10 +2,13 @@ package middlewares
 
 import (
 	"fmt"
-	"strings"
-	"github.com/gin-gonic/gin"
-	"github.com/dgrijalva/jwt-go"
+	"net/http"
 	"rest-in-go/initializers"
+	"rest-in-go/utils"
+	"strings"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 )
 
 func RequireAuth() gin.HandlerFunc {
@@ -55,6 +58,26 @@ func RequireAuth() gin.HandlerFunc {
 		}
 
 		// Continue processing the request
+		c.Next()
+	}
+}
+
+// ExtractUserIDMiddleware adds userID to the request context after validation
+func ExtractUserIDMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("userID")
+		if !exists {
+			utils.AbortWithError(c, http.StatusUnauthorized, "Unauthorized")
+			return
+		}
+
+		userIDUint, ok := userID.(uint)
+		if !ok {
+			utils.AbortWithError(c, http.StatusBadRequest, "Invalid user ID format")
+			return
+		}
+
+		c.Set("userIDUint", userIDUint) // Add validated userID to context
 		c.Next()
 	}
 }
