@@ -3,6 +3,7 @@ package post
 import (
 	"net/http"
 	// "rest-in-go/post"
+	"rest-in-go/models"
 	"rest-in-go/utils"
 
 	"github.com/gin-gonic/gin"
@@ -12,17 +13,45 @@ type PostHandler struct {
 	service PostService
 }
 
+
 func NewPostHandler(service PostService) *PostHandler {
 	return &PostHandler{service: service}
 }
 
 func (h *PostHandler) GetPosts(c *gin.Context) {
-	posts, err := h.service.GetPosts()
+
+	queryParams := utils.ParseQueryParams(c)
+
+	posts, total, err := h.service.GetPosts(queryParams)
 	if err != nil {
 		c.Error(err).SetMeta(http.StatusInternalServerError)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"posts": posts})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Successfully retrieved posts",
+		"page":    queryParams.Page,
+		"limit":   queryParams.Limit,
+		"total":   total,
+		"posts":   processPosts(posts),
+	})
+
+}
+
+func (h *PostHandler) GetPostByID(c *gin.Context) {
+	postID := c.Param("id")
+
+	post, err := h.service.GetPostByID(postID)
+
+	if err != nil {
+		c.Error(err).SetMeta(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Successfully retrieved post",
+		"post":    processPosts([]models.Post{*post}),
+	})
 }
 
 func (h *PostHandler) CreatePost(c *gin.Context) {

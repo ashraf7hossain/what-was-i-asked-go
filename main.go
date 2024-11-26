@@ -17,11 +17,6 @@ func main() {
 
 	fmt.Println("Hello World")
 
-
-  // r.GET("/posts",  controllers.PostIndex)
-	// r.POST("/posts", controllers.PostCreate)
-	// r.PATCH("/posts/:id", controllers.PostUpdate)
-
 	routes.SetupRoutes(r)
 
 	r.Run(":8080")

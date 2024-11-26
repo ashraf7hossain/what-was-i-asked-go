@@ -25,6 +25,16 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
+	// Validate fields
+	if errs := validateInput(input); errs != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"errors": errs, 
+			"message": "Validation failed",
+		})
+		// c.Error(errs).SetMeta(http.StatusBadRequest)
+		return
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 
 	if err != nil {

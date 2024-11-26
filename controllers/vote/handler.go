@@ -27,12 +27,12 @@ func (s *VoteHandler) GetVotesByPostID(c *gin.Context) {
 	count := len(votes)
 
 	response := map[string]interface{}{
-		"message" : "Successfully retrieved votes",
-		"count": count,
+		"message": "Successfully retrieved votes",
+		"count":   count,
 		"voters": utils.Map(votes, func(vote *models.Vote) map[string]interface{} {
 			return map[string]interface{}{
 				"username": vote.User.Name,
-				"id"      : vote.UserID,
+				"id":       vote.UserID,
 			}
 		}),
 	}
@@ -55,8 +55,7 @@ func (s *VoteHandler) CreateVote(c *gin.Context) {
 		return
 	}
 
-	
-	if input.Value > 1 || input.Value < -1 {
+	if input.Value != 1 && input.Value != -1 {
 		c.Error(utils.NewError("Invalid vote value")).SetMeta(http.StatusBadRequest)
 		return
 	}
@@ -65,26 +64,22 @@ func (s *VoteHandler) CreateVote(c *gin.Context) {
 
 	// never voted at all
 	if err != nil {
-		if input.Value != 0 {
-			vote = &models.Vote{
-				UserID: userID,
-				PostID: input.PostID,
-				Value:  input.Value,
-			}
-			err = s.service.CreateVote(vote)
-			if err != nil {
-				c.Error(err).SetMeta(http.StatusInternalServerError)
-			}
-
-			c.JSON(http.StatusOK, gin.H{"message": "Vote created successfully", "vote": vote})
-			return
+		vote = &models.Vote{
+			UserID: userID,
+			PostID: input.PostID,
+			Value:  input.Value,
 		}
-		c.Error(utils.NewError("Invalid vote value")).SetMeta(http.StatusBadRequest)
+		err = s.service.CreateVote(vote)
+		if err != nil {
+			c.Error(err).SetMeta(http.StatusInternalServerError)
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Vote created successfully", "vote": vote})
 		return
 	}
 
-  // delete vote
-	if input.Value == 0 {
+	// delete vote if same button pressed or same vote is cast
+	if input.Value == vote.Value {
 		err := s.service.DeleteVoteByPostIDAndUserID(input.PostID, userID)
 		if err != nil {
 			c.Error(err).SetMeta(http.StatusInternalServerError)
@@ -93,8 +88,8 @@ func (s *VoteHandler) CreateVote(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Vote deleted successfully"})
 		return
 	}
-  
-  // update vote
+
+	// update vote if different vote cast
 	if vote.Value != input.Value {
 		vote.Value = input.Value
 		err = s.service.UpdateVote(vote)

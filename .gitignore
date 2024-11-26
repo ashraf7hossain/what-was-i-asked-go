@@ -1,0 +1,34 @@
+# Compiled object files
+*.o
+
+# Executables
+*.exe
+*.out
+
+# OS specific files
+/dist
+/build
+/bin
+
+# Log files
+*.log
+
+# IDE files
+.idea
+*.iml
+
+# Test files
+/test
+/testdata
+
+# Coverage files
+/coverage
+
+# Dependency directories
+/vendor
+/pkg
+
+# OS specific files
+.DS_Store
+
+.env

@@ -44,6 +44,7 @@ func SetupRoutes(r *gin.Engine) {
 
 	// posts
 	api.GET("/posts", postHandler.GetPosts)
+	api.GET("/posts/:id", postHandler.GetPostByID)
 
 	// tags
 	api.POST("/search/tags", searchController.SearchByTag)
@@ -62,6 +63,8 @@ func SetupRoutes(r *gin.Engine) {
 		protected.POST("/posts", postHandler.CreatePost)
 		protected.PATCH("/posts/:id", postHandler.UpdatePost)
 		protected.POST("/comments", commentHandler.PostComment)
+		protected.PATCH("/comments/:comment_id", commentHandler.UpdateComment)
+		protected.DELETE("/comments/:comment_id", commentHandler.DeleteComment)
 		protected.POST("/votes", voteHandler.CreateVote)
 	}
 }

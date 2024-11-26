@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"rest-in-go/models"
 	"rest-in-go/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -65,5 +66,58 @@ func (h *CommentHandler) PostComment(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"comment": comment,
 	})
+}
 
+func (h *CommentHandler) UpdateComment(c *gin.Context) {
+	commentID, _ := strconv.ParseUint(c.Param("comment_id"), 10, 64)
+	var input struct {
+		Body string `json:"body"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.Error(err).SetMeta(http.StatusBadRequest)
+		return
+	}
+
+	userID, err := utils.GetUserID(c)
+	if err != nil {
+		c.Error(utils.NewError("Unauthorized")).SetMeta(http.StatusUnauthorized)
+		return
+	}
+
+	comment := &models.Comment{
+		Body: input.Body,
+	}
+
+	err = h.service.UpdateComment(comment, uint(commentID), userID)
+
+	if err != nil {
+		c.Error(err).SetMeta(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Comment updated successfully",
+	})
+}
+
+func (h *CommentHandler) DeleteComment(c *gin.Context) {
+	commentID, _ := strconv.ParseUint(c.Param("comment_id"), 10, 64)
+
+	userID, err := utils.GetUserID(c)
+	if err != nil {
+		c.Error(utils.NewError("Unauthorized")).SetMeta(http.StatusUnauthorized)
+		return
+	}
+
+	err = h.service.DeleteComment(uint(commentID), userID)
+
+	if err != nil {
+		c.Error(err).SetMeta(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Comment deleted successfully",
+	})
 }

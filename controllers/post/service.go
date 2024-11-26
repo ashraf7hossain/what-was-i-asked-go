@@ -6,7 +6,8 @@ import (
 )
 
 type PostService interface {
-	GetPosts() ([]models.Post, error)
+	GetPosts(queryParams utils.QueryParams) ([]models.Post,int, error)
+	GetPostByID(postID string) (*models.Post, error)
 	CreateNewPost(input InputPost, userID uint) (*models.Post, error)
 	UpdateExistingPost(postID string, input InputPost, userID uint) (*models.Post, error)
 }
@@ -19,8 +20,8 @@ func NewPostService(repo PostRepository) PostService {
 	return &service{repo: repo}
 }
 
-func (s *service) GetPosts() ([]models.Post, error) {
-	return s.repo.GetAllPosts()
+func (s *service) GetPosts(queryParams utils.QueryParams) ([]models.Post,int, error) {
+	return s.repo.GetAllPosts(queryParams)
 }
 
 func (s *service) CreateNewPost(input InputPost, userID uint) (*models.Post, error) {
@@ -45,6 +46,10 @@ func (s *service) CreateNewPost(input InputPost, userID uint) (*models.Post, err
 	}
 
 	return post, nil
+}
+
+func (s *service) GetPostByID(postID string) (*models.Post, error) {
+	return s.repo.GetPostByID(postID)
 }
 
 func (s *service) UpdateExistingPost(postID string, input InputPost, userID uint) (*models.Post, error) {
