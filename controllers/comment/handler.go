@@ -28,17 +28,37 @@ func (h *CommentHandler) GetAllCommentsByPost(c *gin.Context) {
 	}
 
 	type commentResp struct {
-		CommentId uint   `json:"comment_id"`
+		CommentId uint   `json:"id"`
+		UserId    uint   `json:"user_id"`
 		UserName  string `json:"user_name"`
 		Body      string `json:"body"`
+		Upvotes   int    `json:"upvotes"`
+		Downvotes int    `json:"downvotes"`
+		CreatedAt string `json:"created_at"`
+		UpdatedAt string `json:"updated_at"`
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"comments": utils.Map(comments, func(comment models.Comment) commentResp {
 			return commentResp{
+				UserId:    comment.UserID,
 				UserName:  comment.User.Name,
 				Body:      comment.Body,
 				CommentId: comment.ID,
+				CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
+				UpdatedAt: comment.UpdatedAt.Format("2006-01-02 15:04:05"),
+				Upvotes: utils.Reduce(comment.CommentVotes, func(acc int, vote models.CommentVote) int {
+					if vote.Value == 1 {
+						return acc + 1
+					}
+					return acc
+				}, 0),
+				Downvotes: utils.Reduce(comment.CommentVotes, func(acc int, vote models.CommentVote) int {
+					if vote.Value == -1 {
+						return acc + 1
+					}
+					return acc
+				}, 0),
 			}
 		}),
 	})
@@ -85,11 +105,11 @@ func (h *CommentHandler) UpdateComment(c *gin.Context) {
 		return
 	}
 
-	comment := &models.Comment{
+	comment := InputComment{
 		Body: input.Body,
 	}
 
-	err = h.service.UpdateComment(comment, uint(commentID), userID)
+	res, err := h.service.UpdateComment(comment, uint(commentID), userID)
 
 	if err != nil {
 		c.Error(err).SetMeta(http.StatusInternalServerError)
@@ -98,6 +118,7 @@ func (h *CommentHandler) UpdateComment(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Comment updated successfully",
+		"comment": res,
 	})
 }
 

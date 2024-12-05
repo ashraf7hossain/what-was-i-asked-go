@@ -10,6 +10,7 @@ type PostService interface {
 	GetPostByID(postID string) (*models.Post, error)
 	CreateNewPost(input InputPost, userID uint) (*models.Post, error)
 	UpdateExistingPost(postID string, input InputPost, userID uint) (*models.Post, error)
+	DeletePost(postID string, userID uint) (error)
 }
 
 type service struct {
@@ -82,4 +83,18 @@ func (s *service) UpdateExistingPost(postID string, input InputPost, userID uint
 	}
 
 	return post, nil
+}
+
+func (s *service) DeletePost(postID string, userID uint) error {
+	post, err := s.GetPostByID(postID)
+
+	if err != nil {
+		return err
+	}
+
+	if post.UserID != userID {
+		return utils.NewError("unauthroized")
+	}
+
+	return s.repo.DeletePost(postID)
 }

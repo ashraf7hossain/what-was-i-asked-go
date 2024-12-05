@@ -11,6 +11,7 @@ type PostRepository interface {
 	CreatePost(post *models.Post) error
 	GetPostByID(postID string) (*models.Post, error)
 	UpdatePost(post *models.Post) error
+	DeletePost(postID string) error
 }
 
 type repository struct{}
@@ -24,7 +25,10 @@ func (r *repository) GetAllPosts(queryParams utils.QueryParams) ([]models.Post, 
 	var posts []models.Post
 	var total int64
 
-	query := initializers.DB.Model(&models.Post{}).Preload("Tags").Preload("Votes")
+	query := initializers.DB.Model(&models.Post{}).
+		Preload("Tags").
+		Preload("Votes").
+		Preload("User")
 
 	// Apply search if the search parameter is provided
 	if queryParams.Search != "" {
@@ -59,6 +63,7 @@ func (r *repository) GetPostByID(postID string) (*models.Post, error) {
 	if err := initializers.DB.
 		Preload("Tags").
 		Preload("Votes").
+		Preload("User").
 		First(&post, postID).
 		Error; err != nil {
 		return nil, err
@@ -68,4 +73,8 @@ func (r *repository) GetPostByID(postID string) (*models.Post, error) {
 
 func (r *repository) UpdatePost(post *models.Post) error {
 	return initializers.DB.Save(post).Error
+}
+
+func (r *repository) DeletePost(postID string) error {
+	return initializers.DB.Delete(&models.Post{}, postID).Error
 }

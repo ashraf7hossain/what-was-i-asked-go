@@ -9,7 +9,7 @@ type CommentService interface {
 	GetAllCommentsByPost(postID string) ([]models.Comment, error)
 	PostComment(input InputComment, userID uint) (*models.Comment, error)
 	GetCommentById(commentID uint) (*models.Comment, error)
-	UpdateComment(comment *models.Comment, commentID uint, userID uint) error
+	UpdateComment(input InputComment, commentID uint, userID uint) (*models.Comment, error)
 	DeleteComment(commentID uint, userID uint) error
 }
 
@@ -44,19 +44,25 @@ func (s *service) GetCommentById(commentID uint) (*models.Comment, error) {
 	return s.repo.GetCommentById(commentID)
 }
 
-func (s *service) UpdateComment(comment *models.Comment, commentID uint, userID uint) error {
+func (s *service) UpdateComment(input InputComment, commentID uint, userID uint) (*models.Comment, error) {
 	comment, err := s.repo.GetCommentById(commentID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if comment.UserID != userID {
-		return utils.NewError("Unauthorized")
+		return nil, utils.NewError("Unauthorized")
 	}
 
-	comment.Body = comment.Body
+	comment.Body = input.Body
 
-	return s.repo.UpdateComment(comment, commentID)
+	err = s.repo.UpdateComment(comment)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return comment, nil
 }
 
 func (s *service) DeleteComment(commentID uint, userID uint) error {

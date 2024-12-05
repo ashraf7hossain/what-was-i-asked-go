@@ -40,6 +40,7 @@ func (s *SearchController) SearchByTag(c *gin.Context) {
 	}
 
 	type resPost struct {
+		ID    uint      `json:id`
 		Title string 		`json:"title"`
 		Body  string 		`json:"body"`
 		Tags  []string 	`json:"tags"`
@@ -50,6 +51,7 @@ func (s *SearchController) SearchByTag(c *gin.Context) {
 		"count": len(posts),
 		"posts": utils.Map(posts, func(post models.Post) resPost {
 			return resPost{
+				ID   : post.ID,
 				Title: post.Title,
 				Body:  post.Body,
 				Tags:  utils.Map(post.Tags, func(tag models.Tag) string { return tag.Name }),

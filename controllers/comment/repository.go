@@ -9,7 +9,7 @@ type CommentRepository interface {
 	GetAllCommentsByPost(postID string) ([]models.Comment, error)
 	PostComment(comment *models.Comment) error
 	GetCommentById(commentID uint) (*models.Comment, error)
-	UpdateComment(comment *models.Comment, commentID uint) error
+	UpdateComment(comment *models.Comment) error
 	DeleteComment(commentID uint) error
 }
 
@@ -22,7 +22,11 @@ func NewCommentRepository() CommentRepository {
 func (r *commentRepository) GetAllCommentsByPost(postID string) ([]models.Comment, error) {
 	var comments []models.Comment
 
-	err := initializers.DB.Preload("User").Where("post_id = ?", postID).Find(&comments).Error
+	err := initializers.DB.
+	Preload("User").
+	Preload("CommentVotes").
+	Where("post_id = ?", postID).
+	Find(&comments).Error
 
 	if err != nil {
 		return nil, err
@@ -48,8 +52,8 @@ func (r *commentRepository) GetCommentById(commentID uint) (*models.Comment, err
 	return &comment, nil
 }
 
-func (r *commentRepository) UpdateComment(comment *models.Comment, commentID uint) error {
-	return initializers.DB.Model(&models.Comment{}).Where("id = ?", commentID).Updates(comment).Error
+func (r *commentRepository) UpdateComment(comment *models.Comment) error {
+	return initializers.DB.Save(comment).Error
 }
 
 func (r *commentRepository) DeleteComment(commentID uint) error {

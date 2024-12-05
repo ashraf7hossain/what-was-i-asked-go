@@ -14,6 +14,9 @@ RUN go mod download
 # Copy the rest of the application code
 COPY . .
 
+# Run migration
+RUN go run migrate/migrate.go
+
 # Build the application
 RUN go build -o rest-in-go .
 

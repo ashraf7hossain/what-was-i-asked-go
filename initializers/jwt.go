@@ -1,12 +1,15 @@
 package initializers
 
 import (
+	"os"
 	"time"
+
 	"github.com/dgrijalva/jwt-go"
 )
+
 //TODO: change secret key
 
-var SecretKey = "your-secret-key"
+var SecretKey = os.Getenv("JWT_SECRET")
 
 func GenerateJWT(userID uint) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

@@ -28,7 +28,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	// Validate fields
 	if errs := validateInput(input); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"errors": errs, 
+			"errors":  errs,
 			"message": "Validation failed",
 		})
 		// c.Error(errs).SetMeta(http.StatusBadRequest)
@@ -77,7 +77,20 @@ func (h *UserHandler) LoginUser(c *gin.Context) {
 		c.Error(err).SetMeta(http.StatusInternalServerError)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"token": token})
+
+	type processedUser struct {
+		ID    uint   `json:"id"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+
+	finalUser := processedUser{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token, "user": finalUser})
 }
 
 func (h *UserHandler) GetProfile(c *gin.Context) {
@@ -93,5 +106,12 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"user": user})
+	type processedUser struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+
+	finalUser := processedUser{Name: user.Name, Email: user.Email}
+
+	c.JSON(http.StatusOK, gin.H{"user": finalUser})
 }

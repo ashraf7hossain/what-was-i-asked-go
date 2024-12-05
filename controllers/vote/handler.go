@@ -16,9 +16,9 @@ func NewVoteHandler(service VoteService) *VoteHandler {
 	return &VoteHandler{service: service}
 }
 
-func (s *VoteHandler) GetVotesByPostID(c *gin.Context) {
+func (h *VoteHandler) GetVotesByPostID(c *gin.Context) {
 	postID := c.Param("id")
-	votes, err := s.service.GetVotesByPostID(postID)
+	votes, err := h.service.GetVotesByPostID(postID)
 	if err != nil {
 		c.Error(err).SetMeta(http.StatusInternalServerError)
 		return
@@ -40,7 +40,7 @@ func (s *VoteHandler) GetVotesByPostID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"votes": response})
 }
 
-func (s *VoteHandler) CreateVote(c *gin.Context) {
+func (h *VoteHandler) CreateVote(c *gin.Context) {
 	var input InputVote
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -60,7 +60,7 @@ func (s *VoteHandler) CreateVote(c *gin.Context) {
 		return
 	}
 
-	vote, err := s.service.FindVoteByPostIDAndUserID(input.PostID, userID)
+	vote, err := h.service.FindVoteByPostIDAndUserID(input.PostID, userID)
 
 	// never voted at all
 	if err != nil {
@@ -69,18 +69,19 @@ func (s *VoteHandler) CreateVote(c *gin.Context) {
 			PostID: input.PostID,
 			Value:  input.Value,
 		}
-		err = s.service.CreateVote(vote)
+		err = h.service.CreateVote(vote)
 		if err != nil {
 			c.Error(err).SetMeta(http.StatusInternalServerError)
 		}
-
-		c.JSON(http.StatusOK, gin.H{"message": "Vote created successfully", "vote": vote})
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Vote created successfully",
+		})
 		return
 	}
 
 	// delete vote if same button pressed or same vote is cast
 	if input.Value == vote.Value {
-		err := s.service.DeleteVoteByPostIDAndUserID(input.PostID, userID)
+		err := h.service.DeleteVoteByPostIDAndUserID(input.PostID, userID)
 		if err != nil {
 			c.Error(err).SetMeta(http.StatusInternalServerError)
 			return
@@ -89,16 +90,19 @@ func (s *VoteHandler) CreateVote(c *gin.Context) {
 		return
 	}
 
-	// update vote if different vote cast
+	// update vote if different vote is cast
 	if vote.Value != input.Value {
 		vote.Value = input.Value
-		err = s.service.UpdateVote(vote)
+		err = h.service.UpdateVote(vote)
 		if err != nil {
 			c.Error(err).SetMeta(http.StatusInternalServerError)
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Vote updated successfully", "vote": vote})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Vote updated successfully",
+		"vote":    vote,
+	})
 
 }

@@ -32,5 +32,10 @@ func main() {
         log.Fatal("Failed to migrate Vote model:", err)
     }
 
+    err = initializers.DB.AutoMigrate(&models.CommentVote{})
+    if err != nil {
+        log.Fatal("Failed to migrate CommentVote model:", err)
+    }
+
     log.Println("Migrations completed successfully")
 }
